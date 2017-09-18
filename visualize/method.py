@@ -13,6 +13,89 @@ from pylab import *
 
 
 
+def plot_predictions_2D(model, X_train, Y_train, task, feature_names=None, 
+                     train=True, n=50, cmap=None, point_size=15, 
+                     offset=0.05, alpha=1):
+    '''Plots decision regions for classifier clf trained on design matrix X=[x1,x2] with classes y.
+    n is the number of ticks along each direction
+    Author: Victor Kitov (v.v.kitov@yandex.ru), 03.2016.
+    
+    model: prediction model, supporting sklearn interface
+    X_train: design matrix [n_objects x n_features]
+    Y_train: vector of outputs [n_objects]
+    task: either "regression" or "classification"
+    feature_names: list of feature names [n_features]
+    n: how many bins to use along each dimension
+    cmap: matplotlib colormap
+    point_size: size of points for scatterplot
+    offset: margin size around training data distribution
+    alpha: visibility of predictions (0=invisible, 1=fully visible)
+    '''    
+    
+    x1, x2 = X_train[:,0],X_train[:,1]
+    if train:
+        model.fit(X_train, Y_train)
+    
+    margin1 = offset*(x1.max()-x1.min())
+    margin2 = offset*(x2.max()-x2.min())
+        
+    # create a mesh to plot in
+    x1_min, x1_max = x1.min() - margin1, x1.max() + margin1
+    x2_min, x2_max = x2.min() - margin2, x2.max() + margin2
+    
+    xx1, xx2 = np.meshgrid(np.linspace(x1_min, x1_max, n),
+                         np.linspace(x2_min, x2_max, n))
+
+    X_test = hstack( [vec(xx1.ravel()), vec(xx2.ravel())] )    
+    Y_test = model.predict(X_test)
+    yy=Y_test.reshape(n,n)   
+    
+
+    if task=='regression':
+        
+        vmin = minimum(min(Y_train),min(Y_test))
+        vmax = maximum(max(Y_train),max(Y_test))
+
+        import matplotlib.cm as cm
+        from matplotlib.colors import Normalize
+
+        if cmap==None:
+            cmap = cm.hot
+        norm = Normalize(vmin=vmin, vmax=vmax) 
+
+        Y_train = cmap(norm(Y_train))
+        yy = cmap(norm(yy))
+
+        img = imshow(yy, extent=(x1_min, x1_max, x2_min, x2_max), interpolation='nearest', origin='lower', alpha=alpha)
+        scatter(x1, x2, facecolor=Y_train, lw=1, edgecolor='k', s=point_size)    
+        
+    elif task=='classification':
+        from common.visualize.colors import COLORS
+        
+        classes = unique(Y_train)
+        assert len(classes)<=len(COLORS),'Classes count should be <=%s'%len(COLORS)
+        
+        y2color = lambda y: COLORS[find(y==classes)[0]]
+        Z=zeros([n,n,3])
+        for i in arange(n):
+            for j in arange(n):
+                Z[i,j,:]=y2color(yy[i,j])
+        
+        img = imshow( Z, extent=(x1_min, x1_max, x2_min, x2_max), interpolation='nearest', origin='lower', alpha=alpha)
+        scatter(x1, x2, c=[COLORS[find(classes==y)[0]] for y in Y_train], lw=1, edgecolor='k', s=point_size) 
+        
+    else:
+        raise Exception('task should be either "regression" or "classification"!')
+
+    plt.axis([x1_min, x1_max, x2_min, x2_max])
+    
+    if feature_names!=None:
+        xlabel(feature_names[0])
+        ylabel(feature_names[1])
+
+
+
+
 def show_param_dependency(clf, X_train, Y_train, param_name, param_vals, x_label=None, score_fun='accuracy'):
     '''Show plot, showing dependency of score_fun (estimated using CV on X_train, Y_train) 
        on parameter param_name taking values in param_vals.

@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import sklearn as skl
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from common.functions import vec, row
 from pylab import *
 

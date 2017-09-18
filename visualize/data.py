@@ -2,30 +2,27 @@ import numpy as np
 import pandas as pd
 import sklearn as skl
 from sklearn.decomposition import PCA
-from common_plus.supervised_projections import get_supervised_directions, get_projections
 from common_plus.outliers import get_outlier_sels, get_outlier_sels_within_classes
 from common.visualize.colors import COLORS
 from pylab import *
 
 
+def pca_explained(X):
+    '''Shows how much variance is explained by each number of principal components.
+    Features are automatically standardized to zero mean and unit variance. Constant features are removed.
     
+    X: matrix [n_objects x n_features]'''
     
-def pca_report(X,Y=None):
-    '''Find principal components for the data, plot the data in first 2 compoinents and show descriptive power of principal components.'''
+    const_features_sels = (X.std(0)==0)
+    X=X[:,~const_features_sels]  # remove constant features
+    
+    X = (X-X.mean(0))/X.std(0)  # data standardization
+    
     D=X.shape[1]
-    pca =PCA()
+    pca = PCA()
     X_pca = pca.fit_transform(X)
     cum_explained_variance = cumsum(pca.explained_variance_ratio_)
-    
-    figure()
-    if Y==None:
-        scatter(X_pca[:,0], X_pca[:,1])
-    else:
-        scatter(X_pca[:,0], X_pca[:,1], c=[COLORS[y] for y in Y])
-    xlabel('principal component 1')
-    ylabel('principal component 2')
-    title('First 2 components explain %.3f variance'%cum_explained_variance[1])
-    
+	    
     figure()
     plot(range(1,D+1), cum_explained_variance)
     xticks( range(1,D+1) )
@@ -37,9 +34,57 @@ def pca_report(X,Y=None):
     show()
         
         
+        
+    
+def pca_2D(X, Y=None, task=None, cm=None, point_size=10, figsize=None):
+    '''Display data in the space of first two principal components.
+    Data is internally standardized to zero mean and unit variance. Constant features are removed.
+    
+    X: matrix [n_objects x n_features]
+    Y: vector of outputs [n_objects]
+    task: None or 'classification' or 'regression'
+    cm: matplotlib colormap for color display for regression
+    '''
+    
+    
+    D=X.shape[1]
+    pca = PCA()
+    
+    const_features_sels = (X.std(0)==0)
+    X=X[:,~const_features_sels]  # remove constant features
+    
+    X = (X-X.mean(0))/X.std(0)  # data standardization
+    
+    X_pca = pca.fit_transform(X)
+    cum_explained_variance = cumsum(pca.explained_variance_ratio_)
+	
+    if figsize:
+        figure(figsize=figsize)
+        
+    if (Y is None) or (task is None):
+        scatter(X_pca[:,0], X_pca[:,1])
+    else:
+        if task=='classification':
+            scatter(X_pca[:,0], X_pca[:,1], c=[COLORS[y] for y in Y], s=point_size)
+        elif task=='regression':
+            import matplotlib.cm as cm
+            from matplotlib.colors import Normalize
+			
+            if cmap==None:
+                cmap = cm.ocean
+            norm = Normalize(vmin=min(Y), vmax=max(Y)) 		
+            scatter(X_pca[:,0], X_pca[:,1], c=[cmap(norm(y)) for y in Y], s=point_size)
+        else:
+            raise Exception('task should be either "regression" or "classification"!')
+			
+    xlabel('principal component 1')
+    ylabel('principal component 2')
+    title('First 2 components explain %.3f variance'%cum_explained_variance[1])
+        
+        
 
 def plot_corr(df,size=10,show_colorbar=True,show_grid=True):
-    '''Function plots a graphical correlation matrix for earch pair of columns in the dataframe.
+    '''Function plots a graphical correlation matrix for each pair of columns in the dataframe.
     Input:
         df: pandas DataFrame
         size: vertical and horizontal size of the plot
@@ -60,7 +105,7 @@ def plot_corr(df,size=10,show_colorbar=True,show_grid=True):
             }
 
     from matplotlib.colors import LinearSegmentedColormap
-    blue_red_cmap = LinearSegmentedColormap('BlueRed1', cdict)
+    blue_red_cmap = LinearSegmentedColormap('hot', cdict)
 
 
     corr = df.corr()
@@ -77,7 +122,7 @@ def plot_corr(df,size=10,show_colorbar=True,show_grid=True):
 
 
         
-def show_importances(features, importances, max_features=20, min_importance=0, figsize=None):
+def show_feature_importances(features, importances, max_features=20, min_importance=0, figsize=None):
     '''Shows graphically a bar plot of feature importances ordered by decreasing 
     importance labelled by names of features. Features with importances<=0 are not displayed.
     Feature importances can be calculated as clf.feature_importances_ for clf being a
