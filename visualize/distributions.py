@@ -2,6 +2,87 @@ from pylab import *
 from common.visualize.colors import COLORS
 
 
+def discr_dist_classification(X,Y, feature_name='', p_min=None, p_max=None, normed=True):
+    
+    if p_min:
+        x = percentile(X,p_min)
+        sels = (X>=x)
+        X=X[sels]
+        Y=Y[sels]
+    if p_max:
+        x = percentile(X,p_max)
+        sels = (X<=x)
+        X=X[sels]
+        Y=Y[sels]
+        
+    classes = unique(Y)
+    X_unique=unique(X)
+    K = len(X_unique)
+    ind = np.arange(K)    # the x locations for the groups
+
+    width = 0.35       # the width of the bars: can also be len(x) sequence
+
+    bottom=zeros(K)
+    x_counts=zeros(K)
+    pp=[]
+    for y_num, y in enumerate(classes):
+        class_counts=zeros(len(X_unique))
+        for x_num,x in enumerate(X_unique):
+            if normed:
+                x_counts[x_num] = sum((X==x) & (Y==y)) / sum( (X==x) )
+            else:
+                x_counts[x_num] = sum((X==x) & (Y==y))
+        p = plt.bar(ind, x_counts, width, bottom=bottom, fc=COLORS[y_num])
+        bottom+=x_counts
+        pp.append(p)
+
+    plt.ylabel('Classes counts')
+    plt.xticks(ind, X_unique)
+
+    if feature_name:
+            title('Distribution of %s'%feature_name)
+    plt.legend([p[0] for p in pp], classes, loc='best')
+    
+    
+    
+
+def cont_dist_classification(X,Y, feature_name='', p_min=None, p_max=None, normed=True, bins=100):
+    
+    classes = unique(Y)
+    if p_min:
+        x = percentile(X,p_min)
+        sels = (X>=x)
+        X=X[sels]
+        Y=Y[sels]
+    if p_max:
+        x = percentile(X,p_max)
+        sels = (X<=x)
+        X=X[sels]
+        Y=Y[sels]
+    
+    if normed==False:
+        hist([X[Y==y] for y in classes], stacked=True, color=[COLORS[i] for i in range(len(classes))], 
+             bins=bins)
+    else: # normed=True     
+        bottom=zeros(bins)
+        for y_num,y in enumerate(classes):
+            a,b,c = hist(X[Y==y], normed=True, color=COLORS[y_num], 
+                 bins=linspace(min(X),max(X),bins+1), bottom=bottom)
+            bottom+=a
+#             #hist(X[Y==y], normed=True, color=COLORS[y_num], 
+#             #     bins=bins, alpha=0.5)
+
+    import matplotlib.patches as mpatches
+    recs = []
+    for y in classes:
+        recs.append(mpatches.Rectangle((0,0),1,1,fc=COLORS[find(classes==y)[0]]))
+    plt.legend(recs,classes,loc='best')
+    if feature_name:
+        title('Distribution of %s'%feature_name)
+        
+        
+        
+
 def cross_distributions(X, feature_names=None, bins=30, point_size=5, figsize=None):
     """Generate scatter plots of all pairs of variables. Variables are columns of matrix X.
     

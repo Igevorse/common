@@ -118,30 +118,3 @@ def plot_corr(df,size=10,show_colorbar=True,show_grid=True):
         plt.colorbar(m)
     if show_grid is True:
         plt.grid(color=[0.5,0.5,0.5], linestyle=':', linewidth=1)
-
-
-
-        
-def show_feature_importances(features, importances, max_features=20, min_importance=0, figsize=None):
-    '''Shows graphically a bar plot of feature importances ordered by decreasing 
-    importance labelled by names of features. Features with importances<=0 are not displayed.
-    Feature importances can be calculated as clf.feature_importances_ for clf being a
-    decision tree, random forest or tree based boosting.
-    
-    
-    Author: v.v.kitov(at domain)yandex.ru'''
-    
-    inds = argsort(importances)
-    inds = array([ind for ind in inds if importances[ind]>min_importance])[-max_features:]
-
-    features = [features[ind] for ind in inds]
-    importances = [importances[ind] for ind in inds]
-
-    if figsize!=None:
-        figure(figsize=figsize)
-        
-    yy = arange(len(importances))
-    barh(yy, importances)
-    yticks(yy+0.5, features);
-    title('Feature importances')
-    grid()
