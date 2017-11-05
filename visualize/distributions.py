@@ -1,4 +1,5 @@
 from pylab import *
+from sklearn.decomposition import PCA
 from common.visualize.colors import COLORS
 
 
